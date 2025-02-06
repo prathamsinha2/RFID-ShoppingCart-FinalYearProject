@@ -1,0 +1,4 @@
+.venv
+.vscode
+__pycache__
+c_esp8266
