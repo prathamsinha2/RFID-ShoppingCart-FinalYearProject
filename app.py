@@ -12,8 +12,8 @@ BASE_URL = "http://localhost:5000"
 def safe_rerun():
     try:
         st.experimental_rerun()
-    except AttributeError:
-        # If st.experimental_rerun() is not available, do nothing.
+    except Exception:
+        # If st.experimental_rerun() is not available or fails, do nothing.
         pass
 
 # ------------------------------------------------
@@ -85,12 +85,11 @@ def calculate_total(cart):
 def products_page():
     st.header("Available Products")
     st.write("Click **+** to add a product to your cart.")
-
+    
     products = fetch_products()
     if products:
         for product in products:
             cols = st.columns([3, 2, 1])
-            # Display product name and price
             cols[0].markdown(f"**{product['name']}**")
             cols[1].write(f"₹{product['price']}")
             # **+** button to add product to the cart
@@ -104,27 +103,29 @@ def products_page():
 def cart_page():
     st.header("Your Cart")
     st.write("Manage your cart using the buttons below:")
-
+    
     cart = fetch_cart()
     if cart:
+        # For each item in the cart, create one row with product info and three buttons
         for prod_name, details in cart.items():
             # Use the stored RFID tag (or product name as fallback) as the identifier.
             product_id = details.get("rfid_tag", prod_name)
-            cols = st.columns([3, 2, 1, 1, 1])
-            # Display product details: name, quantity, unit price
-            cols[0].markdown(f"**{prod_name}**")
-            cols[1].write(f"Qty: {details['quantity']}")
-            cols[2].write(f"₹{details['price']}")
+            # Create columns: one for product details and one each for the three buttons.
+            cols = st.columns([4, 1, 1, 1])
+            # Display product details (name, quantity, and unit price)
+            cols[0].markdown(
+                f"**{prod_name}**  \nQty: {details['quantity']}  \nPrice: ₹{details['price']}"
+            )
             # **+** button to add one more unit
-            if cols[3].button("➕", key=f"cart_plus_{product_id}"):
+            if cols[1].button("➕", key=f"cart_plus_{product_id}"):
                 add_product(product_id)
                 safe_rerun()
             # **–** button to reduce the quantity by one
-            if cols[4].button("➖", key=f"cart_minus_{product_id}"):
+            if cols[2].button("➖", key=f"cart_minus_{product_id}"):
                 reduce_quantity(product_id)
                 safe_rerun()
-            # A separate button for the drop (🗑️) action
-            if st.button("🗑️", key=f"cart_drop_{product_id}"):
+            # **🗑️** button to remove the product completely from the cart
+            if cols[3].button("🗑️", key=f"cart_drop_{product_id}"):
                 drop_product(product_id)
                 safe_rerun()
             st.markdown("---")
@@ -138,10 +139,10 @@ def cart_page():
 # ------------------------------------------------
 def main():
     st.title("Shopping Cart Webapp")
-
+    
     # Sidebar Navigation: Select the page to view.
     page = st.sidebar.radio("Navigation", ["Products", "Cart"])
-
+    
     if page == "Products":
         products_page()
     elif page == "Cart":
