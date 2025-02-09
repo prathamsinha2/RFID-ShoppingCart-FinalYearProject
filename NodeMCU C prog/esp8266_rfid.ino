@@ -5,18 +5,21 @@
 #include <SoftwareSerial.h>
 
 // WiFi Settings
-const char* ssid = "Airtel_sinha_310";       // Replace with your WiFi name
-const char* password = "sinha1602";          // Replace with your WiFi password
+const char* ssid = "pratham";       // Replace with your WiFi name
+const char* password = "12345678";   // Replace with your WiFi password
 
 // RFID Serial setup
-SoftwareSerial rfidSerial(13, 12);           // RX, TX
+SoftwareSerial rfidSerial(13, 12);   // RX, TX
 
 // Initialize LCD
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // Python server IP
-const char* serverIP = "192.168.1.4";        // Replace with your Python server IP
-const int serverPort = 5000;                 // Port where Flask is running
+const char* serverIP = "192.168.136.219";  // Replace with your Python server IP
+const int serverPort = 5000;               // Port where Flask is running
+
+// Global variable for periodic fetching
+unsigned long lastTotalFetchTime = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -47,6 +50,7 @@ void setup() {
 }
 
 void loop() {
+  // Check for RFID data
   if (rfidSerial.available() >= 12) {
     delay(100);
     char rfidData[13] = {0};
@@ -58,6 +62,13 @@ void loop() {
     Serial.print("RFID Data: ");
     Serial.println(rfidData);
     sendRFIDData(rfidData);
+  }
+  
+  // Periodically fetch data from /display every 2 seconds
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastTotalFetchTime >= 2000) {
+    fetchAndDisplayTotal();
+    lastTotalFetchTime = currentMillis;
   }
 }
 
@@ -152,8 +163,7 @@ void fetchAndDisplayTotal() {
         lcd.setCursor(0, 0);
         lcd.print("Items: " + totalItems);
         lcd.setCursor(0, 1);
-        lcd.print("Total: Rs." + totalAmount);  // Allow time to display totals
-
+        lcd.print("Total: Rs." + totalAmount);
       }
     } else {
       Serial.println("HTTP POST Failed");
